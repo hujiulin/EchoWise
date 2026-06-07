@@ -7,7 +7,7 @@
     "dev": "bash scripts/tauri-dev.sh",
     "build": "tauri build",
     "vite:dev": "vite",
-    "vite:build": "tsc -b && vite build",
+    "vite:build": "tsc -p tsconfig.app.json && vite build",
     "tauri": "tauri",
     "sign:dev": "codesign --force --sign - --entitlements src-tauri/entitlements.plist src-tauri/target/debug/echowise",
     "test": "vitest run",

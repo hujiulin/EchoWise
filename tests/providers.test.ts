@@ -9,7 +9,7 @@ import {
   ttsInstructions,
   type LLMProvider,
 } from "../src/providers";
-import type { ProviderConfig } from "../src/types";
+import type { ChatMessage, ProviderConfig } from "../src/types";
 
 const openaiCfg: ProviderConfig = {
   provider: "openai",
@@ -177,9 +177,9 @@ describe("companionTurn()", () => {
   });
 
   it("injects history + user text into messages", async () => {
-    const spy = vi.fn(async () => JSON.stringify({ reply: "ok" }));
+    const spy = vi.fn(async (_msgs: ChatMessage[]) => JSON.stringify({ reply: "ok" }));
     await companionTurn({ chatJSON: spy }, ctx, [{ role: "user", content: "first" }], "second");
-    const msgs = spy.mock.calls[0][0];
+    const msgs = spy.mock.calls[0]![0];
     expect(msgs[0].role).toBe("system");
     expect(msgs[0].content).toContain("Aria");
     expect(msgs[0].content).toContain("Day 5");
@@ -226,9 +226,9 @@ describe("summarizeSession()", () => {
   });
 
   it("handles empty transcript", async () => {
-    const spy = vi.fn(async () => JSON.stringify({}));
+    const spy = vi.fn(async (_msgs: ChatMessage[]) => JSON.stringify({}));
     await summarizeSession({ chatJSON: spy }, []);
-    const userMsg = spy.mock.calls[0][0][1].content;
+    const userMsg = spy.mock.calls[0]![0][1].content;
     expect(userMsg).toBe("(empty conversation)");
   });
 });

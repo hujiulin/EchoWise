@@ -118,7 +118,8 @@ describe("Recorder", () => {
     await new Promise((res) => setTimeout(res, 30));
     await r.stop();
     expect(cb).toHaveBeenCalled();
-    const sample = cb.mock.calls.at(-1)?.[0];
+    const lastCall = cb.mock.calls[cb.mock.calls.length - 1];
+    const sample = lastCall?.[0];
     expect(typeof sample).toBe("number");
     expect(sample).toBeGreaterThanOrEqual(0);
     expect(sample).toBeLessThanOrEqual(1);
