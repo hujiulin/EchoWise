@@ -118,7 +118,9 @@ describe("CompatASR", () => {
 
 describe("CompatTTS", () => {
   it("always sends model field (Azure-safe by ignoring it server-side)", async () => {
-    const fetchFn = mockFetch(async () => new Response(new Blob(["audio"], { type: "audio/mpeg" })));
+    const fetchFn = mockFetch(async () =>
+      new Response(new Uint8Array([1, 2, 3]), { headers: { "content-type": "audio/mpeg" } })
+    );
     await new CompatTTS(openaiCfg).synthesize("hi", "nova");
     const body = JSON.parse(fetchFn.mock.calls[0][1]!.body as string);
     expect(body.model).toBe("gpt-4o-mini-tts");
@@ -127,14 +129,14 @@ describe("CompatTTS", () => {
   });
 
   it("includes voice instructions only for gpt-4o-mini-tts", async () => {
-    const fetchFn = mockFetch(async () => new Response(new Blob(["audio"])));
+    const fetchFn = mockFetch(async () => new Response(new Uint8Array([1])));
     await new CompatTTS(openaiCfg).synthesize("hi", "nova", "be calm");
     const body = JSON.parse(fetchFn.mock.calls[0][1]!.body as string);
     expect(body.instructions).toBe("be calm");
   });
 
   it("strips instructions for legacy tts-1 model", async () => {
-    const fetchFn = mockFetch(async () => new Response(new Blob(["audio"])));
+    const fetchFn = mockFetch(async () => new Response(new Uint8Array([1])));
     await new CompatTTS({ ...openaiCfg, ttsModel: "tts-1" }).synthesize("hi", "nova", "be calm");
     const body = JSON.parse(fetchFn.mock.calls[0][1]!.body as string);
     expect(body.instructions).toBeUndefined();
