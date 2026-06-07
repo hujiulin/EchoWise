@@ -23,10 +23,6 @@ jobs:
             args: "--target aarch64-apple-darwin"
             label: "macOS (Apple Silicon)"
             rust-target: "aarch64-apple-darwin"
-          - platform: macos-13
-            args: "--target x86_64-apple-darwin"
-            label: "macOS (Intel)"
-            rust-target: "x86_64-apple-darwin"
           - platform: windows-latest
             args: ""
             label: "Windows"
@@ -78,7 +74,7 @@ jobs:
             Auto-built EchoWise release.
 
             **Downloads**
-            - **macOS**: `.dmg` for Apple Silicon and Intel
+            - **macOS**: `.dmg` for Apple Silicon (M1/M2/M3+)
             - **Windows**: `.msi` installer and portable `.exe`
 
             Existing users will receive this update automatically the next
