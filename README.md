@@ -206,24 +206,6 @@ npm run test:coverage  # write HTML report to coverage/
 
 ---
 
-## Release flow
-
-Push a git tag and CI handles the rest:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-[.github/workflows/release.yml](.github/workflows/release.yml) fans out across three runners in parallel:
-- macOS (Apple Silicon, `aarch64`)
-- macOS (Intel, `x86_64`)
-- Windows (`x86_64`)
-
-Roughly 10–15 minutes later, a draft Release shows up on GitHub Releases — review and hit Publish.
-
----
-
 ## Auto-update setup (maintainers)
 
 EchoWise ships with an in-app updater powered by `tauri-plugin-updater`. The desktop app polls a JSON manifest at app launch and from the Settings → About panel; when a signed bundle is newer than the installed version, the user can install it with one click.
@@ -295,30 +277,6 @@ The `latest.json` file follows the [Tauri v2 schema](https://v2.tauri.app/plugin
 ```
 
 The release workflow generates this automatically when `TAURI_SIGNING_PRIVATE_KEY` is set.
-
----
-
-## Roadmap
-
-- [x] M1 — Single companion + voice chat + scoring
-- [x] M2 — Conversation history resume + Day-based relationship arc
-- [x] M3 — Appearance theming + custom backgrounds
-- [x] M4 — GitHub Actions auto-build
-- [ ] M5 — Long-term memory (companion volunteers callbacks to interests / projects)
-- [ ] M6 — Offline mode (local Whisper.cpp + Ollama + Piper)
-- [ ] M7 — Mobile
-
----
-
-## Contributing
-
-Issues and PRs are welcome.
-
-Before opening a PR:
-1. `npm test` passes
-2. Cover new features with unit tests
-3. `npm run vite:build` type-checks cleanly
-4. Keep code and comments in English (UI copy may be localized)
 
 ---
 

@@ -419,9 +419,11 @@ describe("Conversation — composer state transitions", () => {
       fireEvent.submit(input.closest("form")!);
       await Promise.resolve();
     });
-    // ThinkingBar copy may also match the busy message in the message stream,
-    // so allow multiple matches.
-    expect(screen.getAllByText(/EchoWise is thinking/).length).toBeGreaterThan(0);
+    // Thinking state shows the companion-named pill in the composer
+    expect(screen.getByText(/EchoWise is thinking…/)).toBeInTheDocument();
+    // And the inline typing placeholder (3 animated dots) appears in the stream
+    // (Both the composer ThinkingBar and the in-stream TypingIndicator render dots)
+    expect(screen.getAllByLabelText("thinking").length).toBeGreaterThanOrEqual(1);
     // ThinkingBar Stop button has visible text "Stop"
     expect(screen.getByText(/^Stop$/)).toBeInTheDocument();
     await act(async () => {

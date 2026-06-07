@@ -206,24 +206,6 @@ npm run test:coverage  # 出 HTML 覆盖报告到 coverage/
 
 ---
 
-## 发布流程
-
-打 git tag 即可自动触发 release：
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-[.github/workflows/release.yml](.github/workflows/release.yml) 会在 3 个 runner 上并行打包：
-- macOS (Apple Silicon, `aarch64`)
-- macOS (Intel, `x86_64`)
-- Windows (`x86_64`)
-
-约 10–15 分钟后，Release 草稿会出现在 GitHub Releases 页面，审核后点 Publish。
-
----
-
 ## 自动更新设置（维护者）
 
 EchoWise 内置基于 `tauri-plugin-updater` 的自动更新。桌面端启动时和 Settings → About 面板都会去拉一个 JSON manifest；当签名过的新版可用时，用户一键即可安装。
@@ -295,30 +277,6 @@ npx @tauri-apps/cli signer generate -w ~/.tauri/echowise-updater.key
 ```
 
 `TAURI_SIGNING_PRIVATE_KEY` 配置后，release workflow 会自动生成这个文件。
-
----
-
-## 路线图
-
-- [x] M1 - 单伴侣 + 语音对话 + 评分
-- [x] M2 - 历史会话恢复 + Day 关系演变
-- [x] M3 - 外观主题 + 背景图自定义
-- [x] M4 - GitHub Actions 自动构建
-- [ ] M5 - 长期记忆（伴侣主动回顾你提过的兴趣 / 项目）
-- [ ] M6 - 离线模式（本地 Whisper.cpp + Ollama + Piper）
-- [ ] M7 - 移动端
-
----
-
-## 贡献
-
-欢迎 Issues 和 PR。
-
-提 PR 前请：
-1. `npm test` 全部通过
-2. 新功能补对应的 unit test
-3. `npm run vite:build` 通过 TypeScript 检查
-4. 代码与注释保持英文（UI 文案可本地化）
 
 ---
 
