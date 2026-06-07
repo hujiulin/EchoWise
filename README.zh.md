@@ -52,10 +52,8 @@
 ## 截图
 
 <p align="center">
-  <img src="assets/screenshots/01-talk.gif" alt="EchoWise — 与伴侣对话" width="720" />
+  <img src="assets/screenshots/demo.gif" alt="EchoWise — 完整演示" width="720" />
 </p>
-
-> _更多演示（评分 / 成长 / 自定义）待补充。_
 
 ---
 

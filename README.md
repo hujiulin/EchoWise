@@ -52,10 +52,8 @@ We don't drill vocabulary, hand out exercises, or assign grades. We let you buil
 ## Screenshots
 
 <p align="center">
-  <img src="assets/screenshots/01-talk.gif" alt="EchoWise — talking with the companion" width="720" />
+  <img src="assets/screenshots/demo.gif" alt="EchoWise — full walk-through" width="720" />
 </p>
-
-> _More walk-throughs (scoring, growth, customization) coming soon._
 
 ---
 
