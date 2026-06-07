@@ -44,13 +44,16 @@ We don't drill vocabulary, hand out exercises, or assign grades. We let you buil
 | 📈 **Growth that actually means something** | Confidence trend (5-sentence rolling average, updates as you talk) · 5-band distribution · auto-picked "best so far" + "worth revisiting". |
 | 🎨 **Full appearance customization** | Theme (system / light / dark), 4 fonts, 4 sizes, 6 preset gradient backgrounds or upload your own. |
 | 🔌 **Multi-provider** | OpenAI / Azure OpenAI with one click. Defaults: `gpt-5` + `gpt-4o-transcribe` + `gpt-4o-mini-tts` (voice instructions adapt to your companion's persona). |
+| 🔄 **Auto-update** | Signed in-app updater. Background check at launch; one-click install when a new version is published. |
 | 💾 **Fully local** | SQLite + filesystem. Every conversation, recording, and AI voice clip stays on your machine forever. |
 
 ---
 
 ## Screenshots
 
-> _Screenshots coming soon._
+<p align="center">
+  <img src="assets/screenshots/demo.gif" alt="EchoWise — full walk-through" width="720" />
+</p>
 
 ---
 
@@ -205,45 +208,77 @@ npm run test:coverage  # write HTML report to coverage/
 
 ---
 
-## Release flow
+## Auto-update setup (maintainers)
 
-Push a git tag and CI handles the rest:
+EchoWise ships with an in-app updater powered by `tauri-plugin-updater`. The desktop app polls a JSON manifest at app launch and from the Settings → About panel; when a signed bundle is newer than the installed version, the user can install it with one click.
+
+Out of the box the update check is wired up but **signing is unconfigured** — the app will run fine without it, but auto-update will be disabled until you set it up. To enable:
+
+### 1. Generate a signing keypair (one time)
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+npx @tauri-apps/cli signer generate -w ~/.tauri/echowise-updater.key
 ```
 
-[.github/workflows/release.yml](.github/workflows/release.yml) fans out across three runners in parallel:
-- macOS (Apple Silicon, `aarch64`)
-- macOS (Intel, `x86_64`)
-- Windows (`x86_64`)
+Two files are written:
+- `~/.tauri/echowise-updater.key` — **private** key. Store it somewhere safe (password manager, secrets vault). Never commit it.
+- `~/.tauri/echowise-updater.key.pub` — public key. Print and copy it.
 
-Roughly 10–15 minutes later, a draft Release shows up on GitHub Releases — review and hit Publish.
+### 2. Embed the public key in `tauri.conf.json`
 
----
+```json
+"plugins": {
+  "updater": {
+    "active": true,
+    "pubkey": "<paste the content of echowise-updater.key.pub here>",
+    "endpoints": [
+      "https://github.com/hujiulin/EchoWise/releases/latest/download/latest.json"
+    ]
+  }
+}
+```
 
-## Roadmap
+Commit this change.
 
-- [x] M1 — Single companion + voice chat + scoring
-- [x] M2 — Conversation history resume + Day-based relationship arc
-- [x] M3 — Appearance theming + custom backgrounds
-- [x] M4 — GitHub Actions auto-build
-- [ ] M5 — Long-term memory (companion volunteers callbacks to interests / projects)
-- [ ] M6 — Offline mode (local Whisper.cpp + Ollama + Piper)
-- [ ] M7 — Mobile
+### 3. Add GitHub repo secrets
 
----
+In GitHub → repository → **Settings → Secrets and variables → Actions**, add:
 
-## Contributing
+| Secret | Value |
+|---|---|
+| `TAURI_SIGNING_PRIVATE_KEY` | Contents of `~/.tauri/echowise-updater.key` |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | The password you set in step 1 (or empty if none) |
 
-Issues and PRs are welcome.
+### 4. Ship a release
 
-Before opening a PR:
-1. `npm test` passes
-2. Cover new features with unit tests
-3. `npm run vite:build` type-checks cleanly
-4. Keep code and comments in English (UI copy may be localized)
+Push a `v*` tag as usual. The release workflow will:
+- Build per-platform installers
+- Sign each updater bundle with your private key
+- Upload a `latest.json` manifest alongside the installers
+
+Existing users will see the update inside the app on next launch (after a quiet background check) and in **Settings → About → Updates**.
+
+### Endpoint format
+
+The `latest.json` file follows the [Tauri v2 schema](https://v2.tauri.app/plugin/updater/):
+
+```json
+{
+  "version": "0.2.0",
+  "notes": "What's new",
+  "pub_date": "2026-06-07T10:00:00Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "<base64>",
+      "url": "https://github.com/.../EchoWise_0.2.0_aarch64.app.tar.gz"
+    },
+    "darwin-x86_64":  { ... },
+    "windows-x86_64": { ... }
+  }
+}
+```
+
+The release workflow generates this automatically when `TAURI_SIGNING_PRIVATE_KEY` is set.
 
 ---
 

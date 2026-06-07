@@ -98,30 +98,36 @@ export default function Conversation() {
 
       const aiTurn: Turn = { id: crypto.randomUUID(), role: "assistant", text: reply, createdAt: Date.now() };
       addTurn(aiTurn);
+      // The reply is on screen — drop the "thinking…" UI immediately.
+      // TTS synthesis (network + disk write + playback) runs in the
+      // background so it doesn't leave the composer stuck for several
+      // seconds after the assistant bubble has already appeared.
+      setBusy(false);
 
-      try {
-        const tts = new CompatTTS(config);
-        const blob = await tts.synthesize(reply, companion.voice, ttsInstructions(companion.persona, tier.toneHint));
+      void (async () => {
         try {
-          const convId = useApp.getState().active!.id;
-          const path = await saveAssistantAudio(convId, aiTurn.id, blob);
-          updateTurn(aiTurn.id, { audioPath: path });
-        } catch (e) {
-          console.warn("assistant audio persist failed", e);
-        }
-        try {
-          currentAudio = await playBlob(blob);
+          const tts = new CompatTTS(config);
+          const blob = await tts.synthesize(reply, companion.voice, ttsInstructions(companion.persona, tier.toneHint));
+          try {
+            const convId = useApp.getState().active!.id;
+            const path = await saveAssistantAudio(convId, aiTurn.id, blob);
+            updateTurn(aiTurn.id, { audioPath: path });
+          } catch (e) {
+            console.warn("assistant audio persist failed", e);
+          }
+          try {
+            currentAudio = await playBlob(blob);
+          } catch (e) {
+            // Autoplay can be blocked before any user gesture; the bubble
+            // still has a play button to recover.
+            console.warn("autoplay blocked", e);
+          }
         } catch (e: any) {
-          // Autoplay can be blocked before any user gesture; the bubble still
-          // has a play button to recover.
-          console.warn("autoplay blocked", e);
+          setError(`Voice: ${e.message}`);
         }
-      } catch (e: any) {
-        setError(`Voice: ${e.message}`);
-      }
+      })();
     } catch (e: any) {
       setError(e.message);
-    } finally {
       setBusy(false);
     }
   }
@@ -282,11 +288,13 @@ export default function Conversation() {
               {active.turns.map((turn) => (
                 <TurnView key={turn.id} turn={turn} companionAvatar={companion.avatar} onExpand={() => expandReview(turn)} />
               ))}
-              {busy && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {companion.name} is thinking…
-                </div>
+              {/* Show the typing placeholder ONLY before the AI text arrives.
+                  Once the last turn is the assistant's reply, the visible
+                  bubble already conveys "AI just spoke" — a trailing
+                  three-dot pulse would only re-show during TTS synthesis,
+                  which looks like the AI is "thinking again". */}
+              {busy && active.turns[active.turns.length - 1]?.role === "user" && (
+                <TypingIndicator avatar={companion.avatar} />
               )}
               {error && (
                 <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
@@ -602,7 +610,6 @@ function RecordingBar({
 function ThinkingBar({ companionName, onStop }: { companionName: string; onStop: () => void }) {
   return (
     <div className="flex items-center gap-3 h-11 px-4 rounded-full bg-muted/40 animate-fade-in">
-      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
       <span className="text-sm text-muted-foreground flex-1">{companionName} is thinking…</span>
       <button
         onClick={onStop}
@@ -611,6 +618,37 @@ function ThinkingBar({ companionName, onStop }: { companionName: string; onStop:
       >
         <StopCircle className="h-3.5 w-3.5" /> Stop
       </button>
+    </div>
+  );
+}
+
+/**
+ * Three pulsing dots — used both inline (next to an empty assistant bubble
+ * placeholder while the LLM is responding) and in ThinkingBar.
+ */
+function ThinkingDots({ className }: { className?: string }) {
+  return (
+    <span className={cn("inline-flex items-end gap-1", className)} aria-label="thinking">
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: "0ms" }} />
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: "150ms" }} />
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: "300ms" }} />
+    </span>
+  );
+}
+
+/**
+ * iMessage-style typing placeholder: companion avatar + a small bubble
+ * containing three pulsing dots. Used where an assistant turn is about to
+ * arrive, so the message stream has visual continuity (avatar + bubble shape
+ * preserved) without repeating the bottom-bar "Thinking…" copy.
+ */
+function TypingIndicator({ avatar }: { avatar: string }) {
+  return (
+    <div className="flex gap-3 animate-slide-up">
+      <Avatar value={avatar} size={32} />
+      <div className="rounded-2xl rounded-tl-sm bg-secondary px-4 py-3.5">
+        <ThinkingDots className="text-muted-foreground" />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { DEFAULT_COMPANION } from "./companions";
 import * as DB from "./db";
+import * as Updater from "./updater";
 import {
   type AppearanceConfig,
   type Companion,
@@ -10,8 +11,18 @@ import {
   type Turn,
   type UserMemory,
 } from "./types";
+import type { AvailableUpdate, UpdateProgress } from "./updater";
 
 export type View = "conversation" | "growth" | "companion" | "settings";
+
+export type UpdateStatus =
+  | "idle"
+  | "checking"
+  | "upToDate"
+  | "available"
+  | "downloading"
+  | "installed"
+  | "error";
 
 interface AppState {
   ready: boolean;
@@ -31,6 +42,13 @@ interface AppState {
   recordStartedAt?: number;
   error?: string;
 
+  /* updater slice */
+  updateStatus: UpdateStatus;
+  latestUpdate?: AvailableUpdate;
+  updateProgress?: UpdateProgress;
+  updateError?: string;
+  lastUpdateCheck?: number;
+
   init: () => Promise<void>;
   setView: (v: View) => void;
   setConfig: (c: ProviderConfig) => void;
@@ -47,6 +65,12 @@ interface AppState {
   setRecording: (b: boolean, startedAt?: number) => void;
   setError: (e?: string) => void;
   attachSummary: (id: string, summary: Conversation["summary"]) => Promise<void>;
+
+  /* updater actions */
+  checkForUpdate: (opts?: { silent?: boolean }) => Promise<void>;
+  installUpdate: () => Promise<void>;
+  restartForUpdate: () => Promise<void>;
+  dismissUpdate: () => void;
 }
 
 const PLACEHOLDER_CFG: ProviderConfig = {
@@ -77,6 +101,7 @@ export const useApp = create<AppState>((set, get) => ({
   stats: [],
   busy: false,
   recording: false,
+  updateStatus: "idle",
 
   async init() {
     if (get().ready) return;
@@ -93,6 +118,9 @@ export const useApp = create<AppState>((set, get) => ({
           DB.loadStats(90),
         ]);
         set({ companion, memory, config, appearance, history, stats, ready: true });
+        // Quietly look for an update in the background — no UI noise unless
+        // one is actually available.
+        setTimeout(() => { void get().checkForUpdate({ silent: true }); }, 3_000);
       } catch (e: any) {
         console.error("init failed", e);
         set({ initError: e?.message ?? String(e), ready: true });
@@ -214,6 +242,54 @@ export const useApp = create<AppState>((set, get) => ({
     await DB.updateStatScores(today, summary.confidence, summary.listening);
     const stats = await DB.loadStats(90);
     set({ stats });
+  },
+
+  /* ---------- updater ---------- */
+
+  async checkForUpdate(opts) {
+    // Silent: only flips status if there's actually an update; quiet otherwise.
+    const silent = opts?.silent ?? false;
+    if (!silent) set({ updateStatus: "checking", updateError: undefined });
+    try {
+      const available = await Updater.checkForUpdate({ silent });
+      set({ lastUpdateCheck: Date.now() });
+      if (available) {
+        set({ latestUpdate: available, updateStatus: "available" });
+      } else if (!silent) {
+        set({ updateStatus: "upToDate" });
+      }
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      console.warn("checkForUpdate failed", e);
+      if (!silent) set({ updateStatus: "error", updateError: msg });
+    }
+  },
+
+  async installUpdate() {
+    if (!get().latestUpdate) return;
+    set({ updateStatus: "downloading", updateProgress: { downloaded: 0 }, updateError: undefined });
+    try {
+      await Updater.downloadAndInstall((progress) => {
+        set({ updateProgress: progress });
+      });
+      set({ updateStatus: "installed" });
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      console.warn("installUpdate failed", e);
+      set({ updateStatus: "error", updateError: msg });
+    }
+  },
+
+  async restartForUpdate() {
+    try {
+      await Updater.restartApp();
+    } catch (e: any) {
+      set({ updateError: e?.message ?? String(e) });
+    }
+  },
+
+  dismissUpdate: () => {
+    set({ updateStatus: "idle", latestUpdate: undefined, updateProgress: undefined });
   },
 }));
 
