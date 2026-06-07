@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Palette, Cpu, Info } from "lucide-react";
 import { cn } from "../lib/cn";
+import { useApp } from "../store";
 import AppearancePanel from "./AppearancePanel";
 import ProviderPanel from "./ProviderPanel";
 import AboutPanel from "./AboutPanel";
@@ -10,11 +11,13 @@ type Tab = "appearance" | "provider" | "about";
 const TABS: { id: Tab; label: string; icon: typeof Palette; desc: string }[] = [
   { id: "appearance", label: "Appearance", icon: Palette, desc: "Theme · typography · background" },
   { id: "provider",   label: "AI provider", icon: Cpu,    desc: "Models · keys · endpoints" },
-  { id: "about",      label: "About",       icon: Info,   desc: "Version · links · credits" },
+  { id: "about",      label: "About",       icon: Info,   desc: "Version · updates · links" },
 ];
 
 export default function Settings() {
   const [tab, setTab] = useState<Tab>("appearance");
+  const updateStatus = useApp((s) => s.updateStatus);
+  const updateAvailable = updateStatus === "available" || updateStatus === "installed";
 
   return (
     <div className="h-full flex">
@@ -36,8 +39,16 @@ export default function Settings() {
             )}
           >
             <Icon className="h-4 w-4 mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <div className="text-sm font-medium leading-tight">{label}</div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium leading-tight">{label}</span>
+                {id === "about" && updateAvailable && (
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+                    aria-label="Update available"
+                  />
+                )}
+              </div>
               <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{desc}</div>
             </div>
           </button>

@@ -44,6 +44,7 @@
 | 📈 **真正的成长曲线** | 信心趋势（最近 5 句滚动均值，说话就更新）、5 档分布、自动挑出"最棒一句"和"值得再说一次的一句"。 |
 | 🎨 **完整外观定制** | 主题（自动 / 浅色 / 深色）、4 种字体、4 档字号、6 套预设背景渐变或上传自己的图片。 |
 | 🔌 **多 Provider 支持** | OpenAI / Azure OpenAI 一键切换。默认 `gpt-5` + `gpt-4o-transcribe` + `gpt-4o-mini-tts`（声线根据伴侣人设动态调整）。 |
+| 🔄 **自动更新** | 应用内带签名的更新器：启动时静默检查，有新版一键安装。 |
 | 💾 **完全本地** | SQLite + 文件系统。所有对话、录音、AI 语音回放永久留在你机器上。 |
 
 ---
@@ -220,6 +221,80 @@ git push origin v0.1.0
 - Windows (`x86_64`)
 
 约 10–15 分钟后，Release 草稿会出现在 GitHub Releases 页面，审核后点 Publish。
+
+---
+
+## 自动更新设置（维护者）
+
+EchoWise 内置基于 `tauri-plugin-updater` 的自动更新。桌面端启动时和 Settings → About 面板都会去拉一个 JSON manifest；当签名过的新版可用时，用户一键即可安装。
+
+更新检查的代码已经全部就绪，**但签名默认未配置** —— 不配置不影响应用使用，只是自动更新不会启用。开启步骤：
+
+### 1. 生成签名密钥对（一次性）
+
+```bash
+npx @tauri-apps/cli signer generate -w ~/.tauri/echowise-updater.key
+```
+
+会生成两个文件：
+- `~/.tauri/echowise-updater.key` —— **私钥**。妥善保管（密码管理器 / 密钥库），**绝不提交**。
+- `~/.tauri/echowise-updater.key.pub` —— 公钥。打开复制内容。
+
+### 2. 把公钥写进 `tauri.conf.json`
+
+```json
+"plugins": {
+  "updater": {
+    "active": true,
+    "pubkey": "<把 echowise-updater.key.pub 的内容贴在这>",
+    "endpoints": [
+      "https://github.com/hujiulin/EchoWise/releases/latest/download/latest.json"
+    ]
+  }
+}
+```
+
+提交这个改动。
+
+### 3. 加 GitHub 仓库 secrets
+
+到 GitHub → 仓库 → **Settings → Secrets and variables → Actions**，添加：
+
+| Secret | 值 |
+|---|---|
+| `TAURI_SIGNING_PRIVATE_KEY` | `~/.tauri/echowise-updater.key` 文件的内容 |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 第 1 步设置的密码（没设就留空） |
+
+### 4. 发版
+
+像往常一样 push `v*` tag，release workflow 会：
+- 在三个平台打包安装器
+- 用你的私钥签名每个更新包
+- 在 Releases 一起上传 `latest.json` manifest
+
+现有用户下次启动 EchoWise 后，应用会在后台静默检查，并在 **Settings → About → Updates** 显示更新。
+
+### Endpoint 格式
+
+`latest.json` 遵循 [Tauri v2 schema](https://v2.tauri.app/plugin/updater/)：
+
+```json
+{
+  "version": "0.2.0",
+  "notes": "What's new",
+  "pub_date": "2026-06-07T10:00:00Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "<base64>",
+      "url": "https://github.com/.../EchoWise_0.2.0_aarch64.app.tar.gz"
+    },
+    "darwin-x86_64":  { ... },
+    "windows-x86_64": { ... }
+  }
+}
+```
+
+`TAURI_SIGNING_PRIVATE_KEY` 配置后，release workflow 会自动生成这个文件。
 
 ---
 

@@ -67,6 +67,10 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Updater signing — required for the in-app updater to verify artifacts.
+          # See README "Auto-update setup" for how to generate and add these.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.event.inputs.version || github.ref_name }}
           releaseName: "EchoWise ${{ github.event.inputs.version || github.ref_name }}"
@@ -77,7 +81,13 @@ jobs:
             - **macOS**: `.dmg` for Apple Silicon and Intel
             - **Windows**: `.msi` installer and portable `.exe`
 
+            Existing users will receive this update automatically the next
+            time they open EchoWise (if signing secrets are configured).
+
             See the README for setup instructions.
           releaseDraft: true
           prerelease: false
+          # Tauri 2 emits the signed updater bundle + a `latest.json` manifest
+          # automatically when TAURI_SIGNING_PRIVATE_KEY is set.
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
