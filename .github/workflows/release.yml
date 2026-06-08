@@ -34,6 +34,48 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Sanity-check tag matches in-tree version
+        # The Tauri bundler writes the version from tauri.conf.json into every
+        # binary (file name, MSI metadata, Info.plist, updater latest.json).
+        # If the git tag is bumped but the source files aren't (or vice versa),
+        # the release ends up with the WRONG version baked into every artifact
+        # — confusing users and breaking the in-app updater. Catch the
+        # mismatch here so we fail in 5 seconds instead of after a 15-minute
+        # cross-platform build.
+        shell: bash
+        run: |
+          RAW_REF="${{ github.event.inputs.version || github.ref_name }}"
+          # Skip when triggered manually without a tag (commit-based draft).
+          if [[ -z "$RAW_REF" || "$RAW_REF" == "main" ]]; then
+            echo "No tag provided; skipping version-match check."
+            exit 0
+          fi
+          TAG_VERSION="${RAW_REF#v}"
+          echo "Tag version: $TAG_VERSION"
+
+          fail=0
+          check() {
+            local label="$1" actual="$2"
+            if [[ "$actual" != "$TAG_VERSION" ]]; then
+              echo "::error::$label is '$actual' but the tag is 'v$TAG_VERSION'."
+              fail=1
+            else
+              echo "  $label: $actual ✓"
+            fi
+          }
+          check "tauri.conf.json" "$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          check "package.json"    "$(node -p "require('./package.json').version")"
+          check "Cargo.toml"      "$(grep -m1 '^version' src-tauri/Cargo.toml | sed -E 's/^version *= *"(.+)"/\1/')"
+          if [[ $fail -ne 0 ]]; then
+            echo ""
+            echo "Bump the in-tree version files before pushing the tag, e.g.:"
+            echo "  - src-tauri/tauri.conf.json   \"version\": \"$TAG_VERSION\""
+            echo "  - package.json                \"version\": \"$TAG_VERSION\""
+            echo "  - src-tauri/Cargo.toml        version = \"$TAG_VERSION\""
+            echo "  (run \`cargo update -p echowise --offline\` in src-tauri/ to refresh Cargo.lock)"
+            exit 1
+          fi
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

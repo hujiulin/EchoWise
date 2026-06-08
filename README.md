@@ -118,6 +118,22 @@ Paste your API key → **Test connection** → **Save**.
 
 ---
 
+## First launch on macOS
+
+The first time you open EchoWise from a downloaded `.dmg`, macOS will show:
+
+> *"Apple could not verify 'EchoWise.app' is free of malware that may harm your Mac…"*
+
+This is expected — EchoWise is ad-hoc signed but not notarized (Apple notarization needs a paid Developer ID). To open it:
+
+1. **System Settings → Privacy & Security** — scroll to the bottom.
+2. You'll see *"EchoWise was blocked to protect your Mac."* Click **Open Anyway**.
+3. Double-click EchoWise again → **Open** in the confirmation dialog.
+
+After that, EchoWise opens with a regular double-click forever.
+
+---
+
 ## Where data lives
 
 Everything stays on **your** machine — nothing is uploaded.

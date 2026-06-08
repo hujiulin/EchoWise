@@ -118,6 +118,22 @@ npm run build
 
 ---
 
+## macOS 首次启动
+
+第一次从下载的 `.dmg` 打开 EchoWise，macOS 会弹出：
+
+> *"Apple 无法验证 'EchoWise.app' 不包含可能损害 Mac 或泄露你隐私的恶意软件……"*
+
+这是预期提示——EchoWise 做了 ad-hoc 签名但没做公证（Apple 公证需要付费的 Developer ID）。打开方法：
+
+1. **系统设置 → 隐私与安全性** — 滚到底部
+2. 看到 *"EchoWise 已被拦截以保护你的 Mac"* → 点 **仍要打开**
+3. 再次双击 EchoWise → 在确认对话框中点 **打开**
+
+之后再启动直接双击即可，不会再弹。
+
+---
+
 ## 数据存储
 
 EchoWise 所有数据在**你的机器上**，不上传任何地方。
