@@ -1,6 +1,6 @@
 [package]
 name = "echowise"
-version = "0.1.0"
+version = "0.1.1"
 description = "EchoWise — AI English speaking & listening tutor"
 authors = ["EchoWise"]
 edition = "2021"
