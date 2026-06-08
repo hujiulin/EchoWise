@@ -67,6 +67,13 @@ jobs:
           # See README "Auto-update setup" for how to generate and add these.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # macOS ad-hoc code signing. Without an Apple Developer ID we cannot
+          # notarize, but ad-hoc signing ("-") at least registers the app
+          # binary with the system so Gatekeeper reports it as "unidentified
+          # developer" (right-click → Open works) instead of the much scarier
+          # "app is damaged and can't be opened" that an *unsigned* .app
+          # downloaded via the quarantine bit triggers.
+          APPLE_SIGNING_IDENTITY: ${{ matrix.platform == 'macos-14' && '-' || '' }}
         with:
           tagName: ${{ github.event.inputs.version || github.ref_name }}
           releaseName: "EchoWise ${{ github.event.inputs.version || github.ref_name }}"
