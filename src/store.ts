@@ -14,6 +14,7 @@ import {
 import type { AvailableUpdate, UpdateProgress } from "./updater";
 
 export type View = "conversation" | "growth" | "companion" | "settings";
+export type SettingsTab = "appearance" | "provider" | "about";
 
 export type UpdateStatus =
   | "idle"
@@ -29,6 +30,12 @@ interface AppState {
   initError?: string;
 
   view: View;
+  /**
+   * When set, the next mount of <Settings/> opens this tab and immediately
+   * clears the request. Lets other screens deep-link into a specific tab
+   * (e.g. the onboarding banner jumps straight to "provider").
+   */
+  pendingSettingsTab?: SettingsTab;
   config: ProviderConfig;
   appearance: AppearanceConfig;
   companion: Companion;
@@ -51,6 +58,8 @@ interface AppState {
 
   init: () => Promise<void>;
   setView: (v: View) => void;
+  openSettings: (tab?: SettingsTab) => void;
+  consumePendingSettingsTab: () => SettingsTab | undefined;
   setConfig: (c: ProviderConfig) => void;
   setAppearance: (patch: Partial<AppearanceConfig>) => void;
   setCompanion: (patch: Partial<Companion>) => void;
@@ -130,6 +139,12 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   setView: (view) => set({ view }),
+  openSettings: (tab) => set({ view: "settings", pendingSettingsTab: tab }),
+  consumePendingSettingsTab: () => {
+    const t = get().pendingSettingsTab;
+    if (t) set({ pendingSettingsTab: undefined });
+    return t;
+  },
   setConfig: (config) => {
     set({ config });
     void DB.saveConfig(config);

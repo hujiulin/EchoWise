@@ -24,7 +24,7 @@ beforeEach(async () => {
   __resetDb();
   await useApp.getState().init();
   // Reset transient state that leaks across tests in this file
-  useApp.setState({ active: undefined, error: undefined, view: "conversation" } as Partial<ReturnType<typeof useApp.getState>>);
+  useApp.setState({ active: undefined, error: undefined, view: "conversation", pendingSettingsTab: undefined } as Partial<ReturnType<typeof useApp.getState>>);
 });
 afterEach(() => { vi.clearAllMocks(); });
 
@@ -53,19 +53,27 @@ describe("Conversation — interactions", () => {
     expect(screen.getByText(/No conversations yet/)).toBeInTheDocument();
   });
 
-  it("sending text without API key shows error and redirects to settings", async () => {
+  it("sending text without API key shows error and redirects to settings provider tab", async () => {
     const user = userEvent.setup();
     render(<Conversation />);
+    // Onboarding card blocks the input from the EmptyState; we need to first
+    // create an active session so the composer is reachable. (handleUser
+    // itself also lazy-creates one, but we want a deterministic mounting.)
+    useApp.getState().startConversation();
     const input = screen.getByPlaceholderText(/Message EchoWise/);
     await user.type(input, "hi");
     // Submit via the form: hit Enter
     await user.keyboard("{Enter}");
     expect(useApp.getState().error).toMatch(/API key/);
     expect(useApp.getState().view).toBe("settings");
+    expect(useApp.getState().pendingSettingsTab).toBe("provider");
   });
 
   it("topic chip click starts a conversation with a topic", async () => {
     const user = userEvent.setup();
+    // Pre-seed an API key — without it the EmptyState shows the onboarding
+    // CTA instead of the topic chips.
+    useApp.getState().setConfig({ ...useApp.getState().config, apiKey: "sk-test" });
     render(<Conversation />);
     // Both topic chips are <button> with the kicker text
     await user.click(screen.getByText("Today's topic").closest("button")!);

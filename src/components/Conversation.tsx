@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, Send, Sparkles, X, Loader2, History, Plus, Calendar, MessageCircle, ChevronDown, ArrowUp, StopCircle, Play, Pause } from "lucide-react";
+import { Mic, Send, Sparkles, X, Loader2, History, Plus, Calendar, MessageCircle, ChevronDown, ArrowUp, StopCircle, Play, Pause, Cpu, ArrowRight } from "lucide-react";
 import { useApp, memorySummary } from "../store";
 import { Recorder, playBlob } from "../audio";
 import { CompatASR, CompatLLM, CompatTTS, companionTurn, reviewSentence, summarizeSession, ttsInstructions } from "../providers";
@@ -19,7 +19,7 @@ let currentAudio: HTMLAudioElement | undefined;
 
 export default function Conversation() {
   const { active, companion, config, busy, recording, recordStartedAt, error, memory, history } = useApp();
-  const { setView, addTurn, updateTurn, setBusy, setRecording, setError, startConversation, loadConversation, endConversation, attachSummary } = useApp();
+  const { setView, openSettings, addTurn, updateTurn, setBusy, setRecording, setError, startConversation, loadConversation, endConversation, attachSummary } = useApp();
   const [text, setText] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [level, setLevel] = useState(0);
@@ -45,7 +45,7 @@ export default function Conversation() {
     if (!userText.trim()) return;
     if (!config.apiKey) {
       setError("Add your API key in Settings first.");
-      setView("settings");
+      openSettings("provider");
       return;
     }
     // Lazy-create a conversation if none is active yet
@@ -310,6 +310,8 @@ export default function Conversation() {
             memberName={memory.name}
             day={day}
             tierLabel={tier.label}
+            needsProvider={!config.apiKey}
+            onOpenProvider={() => openSettings("provider")}
             onStart={() => startConversation()}
             onTopic={(t) => startConversation(t)}
           />
@@ -359,10 +361,13 @@ export default function Conversation() {
 /* ---------------- Empty state (Pure Door folded in) ---------------- */
 
 function EmptyState({
-  companionName, companionAvatar, memberName, day, tierLabel, onStart, onTopic,
+  companionName, companionAvatar, memberName, day, tierLabel,
+  needsProvider, onOpenProvider, onStart, onTopic,
 }: {
   companionName: string; companionAvatar: string; memberName?: string;
   day: number; tierLabel: string;
+  needsProvider: boolean;
+  onOpenProvider: () => void;
   onStart: () => void; onTopic: (title: string) => void;
 }) {
   const topic = pickDaily(TODAYS_TOPIC_POOL);
@@ -370,6 +375,9 @@ function EmptyState({
 
   const greeting = (() => {
     const name = memberName ?? "";
+    if (needsProvider) {
+      return `Hi${name ? " " + name : ""} — I'm ${companionName}. Set up your AI provider and we can start talking.`;
+    }
     if (day <= 1) return `Hi${name ? " " + name : ""} — I'm ${companionName}. What would you like to talk about today?`;
     if (day < 8) return `Hey${name ? " " + name : ""}, good to see you again. What's on your mind?`;
     if (day < 30) return `${name ? `Hey ${name} —` : "Hey,"} what's new with you?`;
@@ -390,27 +398,58 @@ function EmptyState({
           "{greeting}"
         </p>
 
-        <button
-          onClick={onStart}
-          className="text-sm text-muted-foreground hover:text-foreground transition"
-        >
-          — or pick a thread —
-        </button>
+        {needsProvider ? (
+          <OnboardingProviderCard onOpen={onOpenProvider} />
+        ) : (
+          <>
+            <button
+              onClick={onStart}
+              className="text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              — or pick a thread —
+            </button>
 
-        <div className="grid grid-cols-2 gap-3 w-full">
-          <Thread
-            icon={<Calendar className="h-3.5 w-3.5" />}
-            kicker="Today's topic" title={topic.title}
-            onClick={() => onTopic(topic.title)}
-          />
-          <Thread
-            icon={<Sparkles className="h-3.5 w-3.5" />}
-            kicker="Surprise me" title={surprise.title}
-            onClick={() => onTopic(surprise.title)}
-          />
-        </div>
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <Thread
+                icon={<Calendar className="h-3.5 w-3.5" />}
+                kicker="Today's topic" title={topic.title}
+                onClick={() => onTopic(topic.title)}
+              />
+              <Thread
+                icon={<Sparkles className="h-3.5 w-3.5" />}
+                kicker="Surprise me" title={surprise.title}
+                onClick={() => onTopic(surprise.title)}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+function OnboardingProviderCard({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      onClick={onOpen}
+      className="w-full text-left rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 transition p-5 group"
+      data-testid="onboarding-provider-cta"
+    >
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+          <Cpu className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-sm font-semibold">Connect an AI provider</div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 group-hover:text-foreground transition" />
+          </div>
+          <div className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            EchoWise needs an API key from <span className="font-medium text-foreground">OpenAI</span> or <span className="font-medium text-foreground">Azure OpenAI</span> to listen, think, and talk back. Takes about a minute.
+          </div>
+        </div>
+      </div>
+    </button>
   );
 }
 

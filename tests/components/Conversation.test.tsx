@@ -22,6 +22,10 @@ import { __resetDb } from "../__mocks__/tauri-sql";
 beforeEach(async () => {
   __resetDb();
   await useApp.getState().init();
+  // Default these tests to a "provider-configured" state so the empty-state
+  // shows the topic threads instead of the onboarding banner. Onboarding is
+  // covered explicitly below.
+  useApp.getState().setConfig({ ...useApp.getState().config, apiKey: "sk-test" });
 });
 afterEach(() => { vi.clearAllMocks(); });
 
@@ -50,5 +54,28 @@ describe("Conversation — empty state (no active conversation)", () => {
     render(<Conversation />);
     expect(screen.getByRole("button", { name: /Start recording/ })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Message EchoWise/)).toBeInTheDocument();
+  });
+});
+
+describe("Conversation — onboarding (no API key)", () => {
+  beforeEach(() => {
+    // Override the parent beforeEach: wipe the API key for onboarding tests.
+    useApp.getState().setConfig({ ...useApp.getState().config, apiKey: "" });
+  });
+
+  it("shows the Connect-a-provider CTA instead of the topic threads", () => {
+    render(<Conversation />);
+    expect(screen.getByTestId("onboarding-provider-cta")).toBeInTheDocument();
+    expect(screen.getByText(/Connect an AI provider/i)).toBeInTheDocument();
+    // Topic chips should be hidden while unconfigured
+    expect(screen.queryByText("Today's topic")).toBeNull();
+    expect(screen.queryByText("Surprise me")).toBeNull();
+  });
+
+  it("clicking the CTA navigates to Settings → provider tab", () => {
+    render(<Conversation />);
+    screen.getByTestId("onboarding-provider-cta").click();
+    expect(useApp.getState().view).toBe("settings");
+    expect(useApp.getState().pendingSettingsTab).toBe("provider");
   });
 });
