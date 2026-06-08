@@ -24,7 +24,7 @@ beforeEach(async () => {
   __resetDb();
   await useApp.getState().init();
   // Reset transient state that leaks across tests in this file
-  useApp.setState({ active: undefined, error: undefined, view: "conversation", pendingSettingsTab: undefined } as Partial<ReturnType<typeof useApp.getState>>);
+  useApp.setState({ active: undefined, error: undefined, view: "conversation", settingsTab: "appearance" } as Partial<ReturnType<typeof useApp.getState>>);
 });
 afterEach(() => { vi.clearAllMocks(); });
 
@@ -66,7 +66,7 @@ describe("Conversation — interactions", () => {
     await user.keyboard("{Enter}");
     expect(useApp.getState().error).toMatch(/API key/);
     expect(useApp.getState().view).toBe("settings");
-    expect(useApp.getState().pendingSettingsTab).toBe("provider");
+    expect(useApp.getState().settingsTab).toBe("provider");
   });
 
   it("topic chip click starts a conversation with a topic", async () => {

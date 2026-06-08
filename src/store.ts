@@ -31,11 +31,13 @@ interface AppState {
 
   view: View;
   /**
-   * When set, the next mount of <Settings/> opens this tab and immediately
-   * clears the request. Lets other screens deep-link into a specific tab
-   * (e.g. the onboarding banner jumps straight to "provider").
+   * Currently selected sub-tab inside <Settings/>. Lives in the store (rather
+   * than Settings' local useState) so that deep-links from other screens
+   * (e.g. the onboarding banner jumping to "provider") survive React
+   * StrictMode's double-mount in dev — a useState lazy initializer would
+   * fire twice and the second run would see the consumed-state.
    */
-  pendingSettingsTab?: SettingsTab;
+  settingsTab: SettingsTab;
   config: ProviderConfig;
   appearance: AppearanceConfig;
   companion: Companion;
@@ -59,7 +61,7 @@ interface AppState {
   init: () => Promise<void>;
   setView: (v: View) => void;
   openSettings: (tab?: SettingsTab) => void;
-  consumePendingSettingsTab: () => SettingsTab | undefined;
+  setSettingsTab: (tab: SettingsTab) => void;
   setConfig: (c: ProviderConfig) => void;
   setAppearance: (patch: Partial<AppearanceConfig>) => void;
   setCompanion: (patch: Partial<Companion>) => void;
@@ -102,6 +104,7 @@ const IDLE_END_MS = 30 * 60 * 1000; // 30 min
 export const useApp = create<AppState>((set, get) => ({
   ready: false,
   view: "conversation",
+  settingsTab: "appearance",
   config: PLACEHOLDER_CFG,
   appearance: DB.DEFAULT_APPEARANCE,
   companion: DEFAULT_COMPANION,
@@ -139,12 +142,9 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   setView: (view) => set({ view }),
-  openSettings: (tab) => set({ view: "settings", pendingSettingsTab: tab }),
-  consumePendingSettingsTab: () => {
-    const t = get().pendingSettingsTab;
-    if (t) set({ pendingSettingsTab: undefined });
-    return t;
-  },
+  openSettings: (tab) =>
+    set(tab ? { view: "settings", settingsTab: tab } : { view: "settings" }),
+  setSettingsTab: (settingsTab) => set({ settingsTab }),
   setConfig: (config) => {
     set({ config });
     void DB.saveConfig(config);

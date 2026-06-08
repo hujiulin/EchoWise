@@ -76,6 +76,6 @@ describe("Conversation — onboarding (no API key)", () => {
     render(<Conversation />);
     screen.getByTestId("onboarding-provider-cta").click();
     expect(useApp.getState().view).toBe("settings");
-    expect(useApp.getState().pendingSettingsTab).toBe("provider");
+    expect(useApp.getState().settingsTab).toBe("provider");
   });
 });

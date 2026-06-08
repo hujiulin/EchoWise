@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Palette, Cpu, Info } from "lucide-react";
 import { cn } from "../lib/cn";
 import { useApp } from "../store";
@@ -15,20 +14,10 @@ const TABS: { id: Tab; label: string; icon: typeof Palette; desc: string }[] = [
 ];
 
 export default function Settings() {
-  const consumePendingSettingsTab = useApp((s) => s.consumePendingSettingsTab);
-  const [tab, setTab] = useState<Tab>(() => consumePendingSettingsTab() ?? "appearance");
+  const tab = useApp((s) => s.settingsTab);
+  const setTab = useApp((s) => s.setSettingsTab);
   const updateStatus = useApp((s) => s.updateStatus);
   const updateAvailable = updateStatus === "available" || updateStatus === "installed";
-
-  // If a deep-link request arrives *after* mount (e.g. user is already on
-  // Settings and clicks an in-app banner that re-targets a tab), honor it.
-  const pending = useApp((s) => s.pendingSettingsTab);
-  useEffect(() => {
-    if (pending) {
-      setTab(pending);
-      consumePendingSettingsTab();
-    }
-  }, [pending, consumePendingSettingsTab]);
 
   return (
     <div className="h-full flex">

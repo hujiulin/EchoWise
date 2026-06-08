@@ -1,9 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Settings from "../../src/components/Settings";
+import { useApp } from "../../src/store";
 
 describe("Settings (tabbed shell)", () => {
+  beforeEach(() => {
+    // settingsTab now lives in the store; reset it so tests that assert the
+    // default panel aren't sensitive to leakage from prior test files.
+    useApp.setState({ settingsTab: "appearance" });
+  });
+
   it("renders sub-nav with three tabs", () => {
     render(<Settings />);
     expect(screen.getByRole("button", { name: /Appearance/ })).toBeInTheDocument();
