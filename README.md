@@ -118,30 +118,6 @@ Paste your API key → **Test connection** → **Save**.
 
 ---
 
-## First launch: trusting an unsigned build
-
-EchoWise releases are **ad-hoc code-signed** but **not** notarized or signed with a paid Apple/Microsoft developer certificate (the project is funded by no one). On a fresh install your OS will show a one-time security prompt. This is expected — the steps below clear it for good.
-
-### macOS
-
-After dragging EchoWise into `/Applications`, **right-click → Open** the very first time (do **not** double-click). Gatekeeper will warn that the developer is "unidentified" and offer an **Open** button — click it. From the second launch onward it opens normally.
-
-If you instead see `"EchoWise.app" is damaged and can't be opened. You should move it to the Trash`, run this once in Terminal:
-
-```bash
-xattr -cr /Applications/EchoWise.app
-```
-
-That clears the macOS "quarantine" flag added by your browser when it downloaded the `.dmg`. The app is fine — the message just means the OS has never seen this developer signature before.
-
-### Windows
-
-The first time you run `EchoWise.msi` (or the installed `.exe`), **Windows SmartScreen** may show a blue banner that says "Windows protected your PC". Click **More info → Run anyway**. After install, SmartScreen will not prompt again.
-
-This warning will appear until enough users have installed the build for Microsoft's reputation system to trust it; bypassing it permanently requires a paid EV code-signing certificate.
-
----
-
 ## Where data lives
 
 Everything stays on **your** machine — nothing is uploaded.
