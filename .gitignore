@@ -31,7 +31,9 @@ Thumbs.db
 CLAUDE.md
 
 # Internal docs (PRD / UX notes — kept out of public repo)
-docs/
+docs/*
+# ...except the WeChat migration guide, referenced from src/core
+!docs/wechat-miniprogram.md
 
 # Env / secrets
 .env
